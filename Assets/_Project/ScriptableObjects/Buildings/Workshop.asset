@@ -16,27 +16,23 @@ MonoBehaviour:
   description: Members craft materials and tools here.
   satisfiesNeed: 
   needRestoreAmount: 0
-  useDuration: 5
+  useDuration: 30
   capacity: 3
   isWorkBuilding: 1
   producedItem: {fileID: 11400000, guid: d8424bd2d9eaa0a4baf29b05500f09dd, type: 2}
   productionRate: 5
   workerCapacity: 2
   productionSkills:
-  - skill: {fileID: 11400000, guid: 8539682cd0ad5254793fd211b2e7e5f1, type: 2}
-    weight: 1
-    affectsSpeed: 1
-    affectsQuality: 1
-    minimumLevel: 0
-  - skill: {fileID: 11400000, guid: de2b687b6bd6bf84d86990d954c6ad03, type: 2}
-    weight: 0.2
-    affectsSpeed: 1
-    affectsQuality: 0
-    minimumLevel: 0
+  - {skill: {fileID: 11400000, guid: 8539682cd0ad5254793fd211b2e7e5f1, type: 2}, weight: 1, affectsSpeed: 1, affectsQuality: 1, minimumLevel: 0}
+  - {skill: {fileID: 11400000, guid: de2b687b6bd6bf84d86990d954c6ad03, type: 2}, weight: 0.2, affectsSpeed: 1, affectsQuality: 0, minimumLevel: 0}
   skillCombineMode: 0
   size: {x: 2, y: 2}
   prefab: {fileID: 7548117580721675550, guid: b085b6dffe2bf1148a5cff94426e910b, type: 3}
   woodCost: 10
   laborCost: 5
-  buildingColor: {r: 0.85187596, g: 0.8773585, b: 0.5338644, a: 1}
+  buildingColor:
+    r: 0.85187596
+    g: 0.8773585
+    b: 0.5338644
+    a: 1
   icon: {fileID: 0}

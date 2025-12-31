@@ -15,7 +15,7 @@ MonoBehaviour:
   needName: Energy
   description: The stamina to act.
   defaultValue: 70
-  decayRatePerHour: 10
+  decayRatePerHour: 50
   criticalThreshold: 30
   emergencyThreshold: 10
   affectedByActivity: 1

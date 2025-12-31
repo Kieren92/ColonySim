@@ -12,21 +12,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 209b19b045dd8534eb7680013b8acd54, type: 3}
   m_Name: SleepingArea
   m_EditorClassIdentifier: Assembly-CSharp::BuildingDefinition
-  buildingName: Area
+  buildingName: Sleeping Area
   description: "Place to rest and recover energy.\t"
   satisfiesNeed: Energy
   needRestoreAmount: 50
-  useDuration: 10
+  useDuration: 30
   capacity: 3
   isWorkBuilding: 0
   producedItem: {fileID: 0}
   productionRate: 5
   workerCapacity: 2
-  skillAffectsProduction: 1
-  relevantSkill: Farming
+  productionSkills: []
+  skillCombineMode: 0
   size: {x: 3, y: 2}
   prefab: {fileID: 1787565962012765246, guid: e5c3f52ce2fcd034d897d385e6e71d7b, type: 3}
   woodCost: 10
   laborCost: 5
-  buildingColor: {r: 0.47080812, g: 0.5972202, b: 0.8679245, a: 1}
+  buildingColor:
+    r: 0.47080812
+    g: 0.5972202
+    b: 0.8679245
+    a: 1
   icon: {fileID: 0}

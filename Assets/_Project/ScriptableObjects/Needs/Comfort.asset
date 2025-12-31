@@ -15,7 +15,7 @@ MonoBehaviour:
   needName: Comfort
   description: How comfortable you're feeling.
   defaultValue: 70
-  decayRatePerHour: 10
+  decayRatePerHour: 30
   criticalThreshold: 30
   emergencyThreshold: 10
   affectedByActivity: 1

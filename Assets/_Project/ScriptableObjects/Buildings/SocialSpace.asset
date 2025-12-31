@@ -16,17 +16,21 @@ MonoBehaviour:
   description: Gathering area for socializing.
   satisfiesNeed: Social
   needRestoreAmount: 30
-  useDuration: 8
+  useDuration: 20
   capacity: 5
   isWorkBuilding: 0
   producedItem: {fileID: 0}
   productionRate: 5
   workerCapacity: 2
-  skillAffectsProduction: 1
-  relevantSkill: Farming
+  productionSkills: []
+  skillCombineMode: 0
   size: {x: 3, y: 3}
   prefab: {fileID: 5957633510365305911, guid: 9ed080f28571c0c41848f663ee4e0d4f, type: 3}
   woodCost: 10
   laborCost: 5
-  buildingColor: {r: 0.52954787, g: 0.9433962, b: 0.55767024, a: 1}
+  buildingColor:
+    r: 0.52954787
+    g: 0.9433962
+    b: 0.55767024
+    a: 1
   icon: {fileID: 0}
