@@ -1,6 +1,6 @@
 using UnityEngine;
 using TMPro;
-using ColonySim.Structures;
+using Ideology.Structures;
 
 public class BuildingView : MonoBehaviour
 {

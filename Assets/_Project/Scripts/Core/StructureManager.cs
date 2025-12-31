@@ -1,8 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
-using ColonySim.Structures;
+using Ideology.Structures;
 
-namespace ColonySim
+namespace Ideology
 {
     /// <summary>
     /// Manages all placed structures (buildings and interior structures)

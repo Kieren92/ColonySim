@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ColonySim.Structures
+namespace Ideology.Structures
 {
     public class InteriorStructure : Structure
     {

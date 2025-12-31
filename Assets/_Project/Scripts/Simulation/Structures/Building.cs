@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace ColonySim.Structures
+namespace Ideology.Structures
 {
     public class Building : Structure
     {
@@ -15,9 +15,26 @@ namespace ColonySim.Structures
         private List<Member> assignedWorkers = new List<Member>();
         private float productionProgress = 0f;
 
+        // Track occupied cells for this building
+        private List<Vector2Int> occupiedCells;
+
         public Building(BuildingDefinition definition, Vector2Int gridPos, Vector3 worldPos, GameObject gameObject)
             : base(definition, gridPos, worldPos, gameObject)
         {
+            // Calculate occupied cells based on building size
+            occupiedCells = new List<Vector2Int>();
+            for (int x = 0; x < definition.size.x; x++)
+            {
+                for (int y = 0; y < definition.size.y; y++)
+                {
+                    occupiedCells.Add(gridPos + new Vector2Int(x, y));
+                }
+            }
+        }
+
+        protected override List<Vector2Int> GetOccupiedCells()
+        {
+            return occupiedCells;
         }
 
         /// <summary>

@@ -424,9 +424,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BuildingManager
   availableBuildings:
-  - {fileID: 11400000, guid: 5ad46f888af38ad47aa76f4b3dc18072, type: 2}
-  - {fileID: 11400000, guid: b4c84889637f42d4c80f37c1b4c6b33f, type: 2}
-  - {fileID: 11400000, guid: fe394f2d0725a2745837386f1794c688, type: 2}
+  - {fileID: 11400000, guid: 49d6e511bcd83404eae6316d82c23645, type: 2}
+  - {fileID: 11400000, guid: a1d250570414736419296eb7b93c0e30, type: 2}
+  - {fileID: 11400000, guid: 5571b9ba50f8feb43b7a2e04f3d0f648, type: 2}
   - {fileID: 11400000, guid: 7e8d9c12d382d0c4bb626dfbcb0fb364, type: 2}
   - {fileID: 11400000, guid: 85dc37bb2889a5e4f9a45fc789fb93e9, type: 2}
   placementPreviewMaterial: {fileID: 0}

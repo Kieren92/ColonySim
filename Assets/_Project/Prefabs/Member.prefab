@@ -156,9 +156,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MemberView
   moveSpeed: 3
   rotationSpeed: 10
-  nameLabel: {fileID: 0}
-  stateLabel: {fileID: 0}
-  statusIndicator: {fileID: 0}
+  waypointReachedDistance: 0.2
+  wanderRadius: 10
+  wanderInterval: 5
 --- !u!1 &3380694721453444868
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections.Generic;
-using ColonySim.Structures;
+using Ideology.Structures;
 
 public class MemberView : MonoBehaviour
 {
@@ -80,8 +80,13 @@ public class MemberView : MonoBehaviour
 
     private void DetectIfStuck()
     {
+        Debug.Log($"{member.PersonName}: Position={(int)transform.position.x},{(int)transform.position.z}, " +
+          $"Target={currentDestination}, Distance={Vector3.Distance(transform.position, currentDestination):F2}, " +
+          $"Velocity={navMeshAgent.velocity.magnitude:F2}");
+
         if (!isFollowingPath)
         {
+
             stuckTimer = 0f;
             lastPosition = transform.position;
             return;

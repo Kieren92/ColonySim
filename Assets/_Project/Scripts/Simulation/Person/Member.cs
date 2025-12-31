@@ -1,8 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
-using ColonySim;
-using ColonySim.Structures;
+using Ideology;
+using Ideology.Structures;
 
 /// <summary>
 /// A member of the commune with building usage, inventory, and work behavior.
@@ -219,7 +219,7 @@ public class Member : Person
     /// </summary>
     private Structure FindStructureForNeed(string needName)
     {
-        if (ColonySim.StructureManager.Instance == null)
+        if (Ideology.StructureManager.Instance == null)
         {
             // Fallback to old BuildingManager if StructureManager not available
             if (BuildingManager.Instance != null)
@@ -229,7 +229,7 @@ public class Member : Person
             return null;
         }
 
-        return ColonySim.StructureManager.Instance.FindStructureForNeed(needName);
+        return Ideology.StructureManager.Instance.FindStructureForNeed(needName);
     }
 
     /// <summary>

@@ -9,30 +9,47 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 209b19b045dd8534eb7680013b8acd54, type: 3}
+  m_Script: {fileID: 11500000, guid: c00d128c82e5d0c4ba27981af0520c5b, type: 3}
   m_Name: Farm
-  m_EditorClassIdentifier: Assembly-CSharp::BuildingDefinition
-  buildingName: Farm
-  description: Members work here to grow food.
+  m_EditorClassIdentifier: Assembly-CSharp::Ideology.Structures.BuildingDefinition
+  structureName: Farm
+  description: Grow crops and produce raw food.
+  icon: {fileID: 0}
+  size: {x: 4, y: 4}
+  occupiedCells: []
+  usePositions:
+  - relativePosition: {x: 1, y: 0}
+    interactionType: 0
+    interactionLabel: Work the Fields
+    isRequired: 1
+    maxSimultaneousUsers: 2
+  - relativePosition: {x: 3, y: 2}
+    interactionType: 0
+    interactionLabel: Tend Crops
+    isRequired: 0
+    maxSimultaneousUsers: 1
+  prefab: {fileID: 2986065416462546223, guid: 42cd155e761a1a74a861c9560336c682, type: 3}
+  buildingType: 2
+  canContainInteriorStructures: 0
+  maxOccupants: 1
+  interiorSlots: []
+  buildTime: 10
+  buildCosts: []
   satisfiesNeed: 
   needRestoreAmount: 0
-  useDuration: 30
-  capacity: 3
+  useDuration: 0
   isWorkBuilding: 1
+  supportedWorkTypes: 04000000
+  requiredSkills: []
   producedItem: {fileID: 11400000, guid: 854f21d11c9fdde4cb2cd37b58675639, type: 2}
   productionRate: 10
-  workerCapacity: 3
+  workerCapacity: 2
   productionSkills:
-  - {skill: {fileID: 11400000, guid: eeb68e56b87efcd4aad89680dc09c801, type: 2}, weight: 1, affectsSpeed: 1, affectsQuality: 1, minimumLevel: 0}
-  - {skill: {fileID: 11400000, guid: de2b687b6bd6bf84d86990d954c6ad03, type: 2}, weight: 0.3, affectsSpeed: 1, affectsQuality: 0, minimumLevel: 0}
+  - skill: {fileID: 11400000, guid: eeb68e56b87efcd4aad89680dc09c801, type: 2}
+    weight: 0
+    affectsSpeed: 0
+    affectsQuality: 0
+    minimumLevel: 0
   skillCombineMode: 0
-  size: {x: 3, y: 3}
-  prefab: {fileID: 2986065416462546223, guid: 42cd155e761a1a74a861c9560336c682, type: 3}
-  woodCost: 10
-  laborCost: 5
-  buildingColor:
-    r: 0.85187596
-    g: 0.8773585
-    b: 0.5338644
-    a: 1
-  icon: {fileID: 0}
+  buildingColor: {r: 0.9104849, g: 0.9622642, b: 0.44028127, a: 1}
+  IsOperational: 1

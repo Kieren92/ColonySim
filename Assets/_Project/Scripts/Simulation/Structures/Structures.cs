@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-namespace ColonySim.Structures
+namespace Ideology.Structures
 {
     /// <summary>
     /// Runtime instance of a placed structure
@@ -12,7 +12,6 @@ namespace ColonySim.Structures
         public Vector2Int GridPosition { get; protected set; }
         public Vector3 WorldPosition { get; protected set; }
         public GameObject GameObject { get; protected set; }
-
         protected List<Member> currentUsers = new List<Member>();
 
         public Structure(StructureDefinition definition, Vector2Int gridPos, Vector3 worldPos, GameObject gameObject)
@@ -53,21 +52,64 @@ namespace ColonySim.Structures
             currentUsers.Remove(member);
         }
 
-        public virtual Vector3 GetUsePosition(Member member = null)
+        public Vector3 GetUsePosition(Member member)
         {
-            // Find first available use position
+            List<UsePosition> validPositions = new List<UsePosition>();
+
+            // Get occupied cells - only Buildings have this concept
+            List<Vector2Int> occupiedCells = GetOccupiedCells();
+
             foreach (var usePos in Definition.usePositions)
             {
-                Vector2Int worldGridPos = GridPosition + usePos.relativePosition;
+                Vector2Int worldPos = GridPosition + usePos.relativePosition;
 
-                if (GridSystem.Instance.IsCellWalkable(worldGridPos))
+                // For interior interaction types (Occupy, Enter), allow positions inside the building
+                bool isInteriorInteraction = usePos.interactionType == InteractionType.Occupy ||
+                                            usePos.interactionType == InteractionType.Enter;
+
+                if (!isInteriorInteraction)
                 {
-                    return GridSystem.Instance.GridToWorld(worldGridPos);
+                    // For exterior interactions (StandAdjacent), skip if position is occupied by the building
+                    if (occupiedCells != null && occupiedCells.Contains(worldPos))
+                        continue;
+
+                    // Check if the position is walkable
+                    if (!GridSystem.Instance.IsCellWalkable(worldPos))
+                        continue;
                 }
+                else
+                {
+                    // For interior interactions, the position MUST be inside the building
+                    if (occupiedCells == null || !occupiedCells.Contains(worldPos))
+                        continue;
+                }
+
+                // Check if position is already occupied by another member
+                // (optional: add occupancy tracking later)
+
+                validPositions.Add(usePos);
             }
 
-            Debug.LogWarning($"{Definition.structureName}: No valid use positions!");
-            return WorldPosition;
+            if (validPositions.Count == 0)
+            {
+                Debug.LogWarning($"{Definition.structureName}: No valid use positions!");
+                return Vector3.zero;
+            }
+
+            // For now, return the first valid position
+            // TODO: Implement smart selection based on member distance, availability, etc.
+            UsePosition selectedPosition = validPositions[0];
+            Vector2Int selectedGridPos = GridPosition + selectedPosition.relativePosition;
+            return GridSystem.Instance.GridToWorld(selectedGridPos);
+        }
+
+        /// <summary>
+        /// Get the cells occupied by this structure. Override in Building class.
+        /// </summary>
+        protected virtual List<Vector2Int> GetOccupiedCells()
+        {
+            // Default: structures don't occupy cells (only Buildings do)
+            return null;
         }
 
         public int GetCurrentUsers() => currentUsers.Count;

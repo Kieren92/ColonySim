@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c00d128c82e5d0c4ba27981af0520c5b, type: 3}
+  m_Name: Sleeping Area
+  m_EditorClassIdentifier: Assembly-CSharp::Ideology.Structures.BuildingDefinition
+  structureName: Sleeping Area
+  description: Place for members to rest and sleep.
+  icon: {fileID: 0}
+  size: {x: 3, y: 2}
+  occupiedCells: []
+  usePositions:
+  - relativePosition: {x: 1, y: 0}
+    interactionType: 1
+    interactionLabel: Sleep here
+    isRequired: 0
+    maxSimultaneousUsers: 2
+  prefab: {fileID: 1787565962012765246, guid: e5c3f52ce2fcd034d897d385e6e71d7b, type: 3}
+  buildingType: 0
+  canContainInteriorStructures: 0
+  maxOccupants: 2
+  interiorSlots: []
+  buildTime: 5
+  buildCosts: []
+  satisfiesNeed: Energy
+  needRestoreAmount: 100
+  useDuration: 10
+  isWorkBuilding: 0
+  supportedWorkTypes: 
+  requiredSkills: []
+  producedItem: {fileID: 0}
+  productionRate: 5
+  workerCapacity: 2
+  productionSkills: []
+  skillCombineMode: 0
+  buildingColor: {r: 0.5894928, g: 0.3270737, b: 0.9245283, a: 1}
+  IsOperational: 1

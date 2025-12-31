@@ -1,6 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
-using ColonySim.Structures;
+using Ideology.Structures;
 
 /// <summary>
 /// Source of work order - who created it and why.

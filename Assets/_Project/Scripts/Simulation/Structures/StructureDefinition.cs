@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-namespace ColonySim.Structures
+namespace Ideology.Structures
 {
     /// <summary>
     /// Base class for all placeable structures (buildings, furniture, equipment)

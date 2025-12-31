@@ -1,9 +1,9 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-namespace ColonySim.Structures
+namespace Ideology.Structures
 {
-    [CreateAssetMenu(fileName = "New Interior Structure", menuName = "Colony Sim/Structures/Interior Structure")]
+    [CreateAssetMenu(fileName = "New Interior Structure", menuName = "Ideology/Structures/Interior Structure")]
     public class InteriorStructureDefinition : StructureDefinition
     {
         [Header("Interior Properties")]

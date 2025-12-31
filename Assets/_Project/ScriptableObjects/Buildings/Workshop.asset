@@ -9,30 +9,47 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 209b19b045dd8534eb7680013b8acd54, type: 3}
+  m_Script: {fileID: 11500000, guid: c00d128c82e5d0c4ba27981af0520c5b, type: 3}
   m_Name: Workshop
-  m_EditorClassIdentifier: Assembly-CSharp::BuildingDefinition
-  buildingName: Workshop
-  description: Members craft materials and tools here.
+  m_EditorClassIdentifier: Assembly-CSharp::Ideology.Structures.BuildingDefinition
+  structureName: Workshop
+  description: Craft tools and equipment
+  icon: {fileID: 0}
+  size: {x: 3, y: 3}
+  occupiedCells: []
+  usePositions:
+  - relativePosition: {x: 1, y: -1}
+    interactionType: 0
+    interactionLabel: Work at bench
+    isRequired: 1
+    maxSimultaneousUsers: 2
+  - relativePosition: {x: -1, y: 1}
+    interactionType: 0
+    interactionLabel: Use tools
+    isRequired: 0
+    maxSimultaneousUsers: 1
+  prefab: {fileID: 7548117580721675550, guid: b085b6dffe2bf1148a5cff94426e910b, type: 3}
+  buildingType: 2
+  canContainInteriorStructures: 1
+  maxOccupants: 3
+  interiorSlots: []
+  buildTime: 8
+  buildCosts: []
   satisfiesNeed: 
   needRestoreAmount: 0
-  useDuration: 30
-  capacity: 3
+  useDuration: 0
   isWorkBuilding: 1
-  producedItem: {fileID: 11400000, guid: d8424bd2d9eaa0a4baf29b05500f09dd, type: 2}
-  productionRate: 5
-  workerCapacity: 2
+  supportedWorkTypes: 0000000007000000
+  requiredSkills: []
+  producedItem: {fileID: 11400000, guid: 395ea41c22e509142acb054403670b32, type: 2}
+  productionRate: 8
+  workerCapacity: 3
   productionSkills:
-  - {skill: {fileID: 11400000, guid: 8539682cd0ad5254793fd211b2e7e5f1, type: 2}, weight: 1, affectsSpeed: 1, affectsQuality: 1, minimumLevel: 0}
-  - {skill: {fileID: 11400000, guid: de2b687b6bd6bf84d86990d954c6ad03, type: 2}, weight: 0.2, affectsSpeed: 1, affectsQuality: 0, minimumLevel: 0}
+  - skill: {fileID: 11400000, guid: 8539682cd0ad5254793fd211b2e7e5f1, type: 2}
+    weight: 0
+    affectsSpeed: 0
+    affectsQuality: 0
+    minimumLevel: 0
   skillCombineMode: 0
-  size: {x: 2, y: 2}
-  prefab: {fileID: 7548117580721675550, guid: b085b6dffe2bf1148a5cff94426e910b, type: 3}
-  woodCost: 10
-  laborCost: 5
-  buildingColor:
-    r: 0.85187596
-    g: 0.8773585
-    b: 0.5338644
-    a: 1
-  icon: {fileID: 0}
+  buildingColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  IsOperational: 1

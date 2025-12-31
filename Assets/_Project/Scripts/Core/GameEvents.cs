@@ -1,6 +1,6 @@
 ﻿using System;
 using UnityEngine;
-using ColonySim.Structures;
+using Ideology.Structures;
 
 /// <summary>
 /// Central event system for game-wide communication.

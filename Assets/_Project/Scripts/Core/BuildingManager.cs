@@ -1,8 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
-using ColonySim;
-using ColonySim.Structures;
+using Ideology;
+using Ideology.Structures;
 
 /// <summary>
 /// Manages all buildings in the commune.
@@ -241,9 +241,9 @@ public class BuildingManager : MonoBehaviour
         }
 
         // Register with StructureManager
-        if (ColonySim.StructureManager.Instance != null)
+        if (Ideology.StructureManager.Instance != null)
         {
-            ColonySim.StructureManager.Instance.RegisterBuilding(building);
+            Ideology.StructureManager.Instance.RegisterBuilding(building);
         }
 
         // Add BuildingView component for visualization
