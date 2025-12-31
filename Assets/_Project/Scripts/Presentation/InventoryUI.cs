@@ -83,7 +83,6 @@ public class InventoryUI : MonoBehaviour
     /// </summary>
     private void UpdateSelectedMemberDisplay()
     {
-        Debug.Log("UpdateSelectedMemberDisplay called");
 
         // Auto-select first member for now
         if (selectedMember == null && SimulationManager.Instance != null)
@@ -109,7 +108,7 @@ public class InventoryUI : MonoBehaviour
             return;
         }
 
-        Debug.Log($"Displaying inventory for {selectedMember.PersonName}");
+
 
         // Create title label
         if (!memberLabels.ContainsKey("_TITLE_"))
@@ -138,7 +137,7 @@ public class InventoryUI : MonoBehaviour
         }
 
         var memberItems = selectedMember.PersonalInventory.GetAllItems();
-        Debug.Log($"{selectedMember.PersonName} has {memberItems.Count} item stacks");
+
 
         // Update labels
         foreach (var stack in memberItems)

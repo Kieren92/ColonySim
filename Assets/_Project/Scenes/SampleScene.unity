@@ -678,7 +678,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: c1cca4d9d5ec582478c7e493d8d297e3, type: 2}
   - {fileID: 11400000, guid: de2b687b6bd6bf84d86990d954c6ad03, type: 2}
   memberPrefab: {fileID: 153166100638549751, guid: 2059adc46463bae41b9e5d43632b814c, type: 3}
-  startingMembers: 3
+  startingMembers: 1
   spawnCenter: {x: 0, y: 0, z: 0}
   spawnRadius: 5
   simulationSpeed: 10

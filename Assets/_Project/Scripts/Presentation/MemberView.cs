@@ -1,107 +1,170 @@
 using UnityEngine;
-using UnityEngine.AI;
+using TMPro;
 using System.Collections.Generic;
 using Ideology.Structures;
 
+/// <summary>
+/// Visual representation of a Member with pathfinding and building interaction.
+/// </summary>
+[RequireComponent(typeof(CharacterController))]
 public class MemberView : MonoBehaviour
 {
+    [Header("References")]
     private Member member;
-    private CharacterController controller;
-    private List<Vector3> currentPath;
-    private int currentWaypointIndex = 0;
-    private bool isFollowingPath = false;
+
+    private Vector3? cachedTargetPosition = null;
 
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 3f;
     [SerializeField] private float rotationSpeed = 10f;
-    [SerializeField] private float waypointReachedDistance = 0.2f;
+    [SerializeField] private float waypointReachedDistance = 0.5f;
+    [SerializeField] private float gravity = -9.81f;
 
-    [Header("Wandering")]
-    [SerializeField] private float wanderRadius = 10f;
-    [SerializeField] private float wanderInterval = 5f;
+    [Header("UI")]
+    [SerializeField] private TextMeshPro nameLabel;
+    [SerializeField] private TextMeshPro stateLabel;
+    [SerializeField] private GameObject statusIndicator;
+
+    // Components
+    private CharacterController characterController;
+
+    // Pathfinding
+    private List<Vector3> currentPath;
+    private int currentWaypointIndex = 0;
+    private bool isFollowingPath = false;
+
+    // Wandering
     private float wanderTimer = 0f;
+    private float wanderInterval = 5f;
+
+    // Vertical movement
+    private float verticalVelocity = 0f;
 
     // Stuck detection
     private float stuckTimer = 0f;
     private Vector3 lastPosition;
-    private const float STUCK_THRESHOLD = 0.1f;
-    private const float STUCK_TIMEOUT = 3f;
+    private const float STUCK_THRESHOLD = 0.1f; // If moved less than this in 1 second, consider stuck
+    private const float STUCK_TIMEOUT = 3f; // Give up after 3 seconds of being stuck
 
     public void Initialize(Member memberData)
     {
         member = memberData;
-        controller = GetComponent<CharacterController>();
-        if (controller == null)
-        {
-            controller = gameObject.AddComponent<CharacterController>();
-            controller.radius = 0.3f;
-            controller.height = 1.8f;
-        }
-
+        transform.position = member.Position;
         lastPosition = transform.position;
+        CreateUIElements();
+        UpdateDisplay();
+    }
+
+    private void Awake()
+    {
+        characterController = GetComponent<CharacterController>();
     }
 
     private void Update()
     {
         if (member == null) return;
 
+        UpdateDisplay();
         CheckBuildingTarget();
         HandleMovement();
         DetectIfStuck();
+        FaceUIToCamera();
     }
 
+    /// <summary>
+    /// Check if member wants to go to a building and handle that movement.
+    /// </summary>
     private void CheckBuildingTarget()
     {
         Structure targetStructure = member.GetTargetStructure();
 
-        if (targetStructure == null) return;
-
-        // Check if already at building
-        float distanceToBuilding = Vector3.Distance(transform.position, targetStructure.WorldPosition);
-
-        if (distanceToBuilding < 2f && !isFollowingPath)
+        if (targetStructure == null)
         {
-            member.OnArrivedAtBuilding();
-            StopMovement();
+            cachedTargetPosition = null; // Clear cache when no target
+            stuckTimer = 0f; // Reset stuck timer
             return;
         }
 
-        // Not at building yet - path to it
+        if (member.IsUsingBuilding())
+        {
+            cachedTargetPosition = null; // Clear cache when using building
+            stuckTimer = 0f; // Reset stuck timer
+            return;
+        }
+
+        // CRITICAL FIX: Only get position once, then cache it
         if (!isFollowingPath)
         {
-            Vector3 usePosition = targetStructure.GetUsePosition(member);
+            // Get the use position ONCE
+            Vector3 targetWorldPos = targetStructure.GetUsePosition(member);
+            cachedTargetPosition = targetWorldPos;
 
-            Debug.Log($"{member.PersonName}: Moving to {targetStructure.Definition.structureName} at {usePosition}");
-            SetDestination(usePosition);
+            Debug.Log($"{member.PersonName}: Moving to {targetStructure.Definition.structureName} at {targetWorldPos}");
+            SetDestination(targetWorldPos);
+            stuckTimer = 0f; // Reset stuck timer when starting new path
+            return;
+        }
 
-            stuckTimer = 0f;
+        // If we ARE following a path, check if we've arrived using cached position
+        if (cachedTargetPosition.HasValue)
+        {
+            float distanceToTarget = Vector3.Distance(transform.position, cachedTargetPosition.Value);
+
+            if (distanceToTarget <= 2f)
+            {
+                Debug.Log($"{member.PersonName}: Arrived at {targetStructure.Definition.structureName}! (distance: {distanceToTarget:F2})");
+
+                StopMovement();
+                member.OnArrivedAtBuilding();
+                cachedTargetPosition = null; // Clear cache after arrival
+                stuckTimer = 0f; // Reset stuck timer
+            }
+            else if (!isFollowingPath && distanceToTarget <= 3f)
+            {
+                Debug.Log($"{member.PersonName}: Fallback arrival at {targetStructure.Definition.structureName} (distance: {distanceToTarget:F2})");
+
+                member.OnArrivedAtBuilding();
+                cachedTargetPosition = null; // Clear cache after arrival
+                stuckTimer = 0f; // Reset stuck timer
+            }
         }
     }
 
+    /// <summary>
+    /// Detect if the member is stuck and hasn't moved in a while.
+    /// </summary>
     private void DetectIfStuck()
     {
-        Debug.Log($"{member.PersonName}: Position={(int)transform.position.x},{(int)transform.position.z}, " +
-          $"Target={currentDestination}, Distance={Vector3.Distance(transform.position, currentDestination):F2}, " +
-          $"Velocity={navMeshAgent.velocity.magnitude:F2}");
-
+        // Only check if following a path
         if (!isFollowingPath)
         {
-
             stuckTimer = 0f;
             lastPosition = transform.position;
             return;
         }
 
+        // Calculate how far we've moved since last check
         float distanceMoved = Vector3.Distance(transform.position, lastPosition);
+
+        // Debug log every frame while moving
+        if (currentPath != null && currentWaypointIndex < currentPath.Count)
+        {
+            Debug.Log($"{member.PersonName}: Pos=({transform.position.x:F1}, {transform.position.z:F1}), " +
+                      $"Moved={distanceMoved:F2}, Waypoint[{currentWaypointIndex}/{currentPath.Count}] at " +
+                      $"({currentPath[currentWaypointIndex].x:F1}, {currentPath[currentWaypointIndex].z:F1}), " +
+                      $"dist={Vector3.Distance(transform.position, currentPath[currentWaypointIndex]):F2}");
+        }
 
         if (distanceMoved < STUCK_THRESHOLD)
         {
+            // Not moving much - increment stuck timer
             stuckTimer += Time.deltaTime;
 
             if (stuckTimer >= STUCK_TIMEOUT)
             {
                 Debug.LogWarning($"{member.PersonName}: Stuck for {STUCK_TIMEOUT}s! Giving up on current path.");
 
+                // Clear the target building so simulation can try again or do something else
                 if (member.GetTargetStructure() != null)
                 {
                     Debug.Log($"{member.PersonName}: Clearing unreachable target building");
@@ -114,17 +177,23 @@ public class MemberView : MonoBehaviour
         }
         else
         {
+            // Moving successfully - reset stuck timer
             stuckTimer = 0f;
         }
 
+        // Update last position for next check
         lastPosition = transform.position;
     }
 
+    /// <summary>
+    /// Handle all movement logic.
+    /// </summary>
     private void HandleMovement()
     {
+        // Don't wander if we have a building target
         if (member.GetTargetStructure() != null)
         {
-            return;
+            return; // CheckBuildingTarget() handles this
         }
 
         if (isFollowingPath)
@@ -133,95 +202,241 @@ public class MemberView : MonoBehaviour
         }
         else
         {
-            wanderTimer += Time.deltaTime;
-            if (wanderTimer >= wanderInterval)
+            // Don't wander if using a building
+            if (!member.IsUsingBuilding())
             {
-                wanderTimer = 0f;
-                WanderToRandomLocation();
+                wanderTimer += Time.deltaTime;
+                if (wanderTimer >= wanderInterval)
+                {
+                    wanderTimer = 0f;
+                    WanderToRandomLocation();
+                }
             }
         }
     }
 
+    /// <summary>
+    /// Follow the current path to destination.
+    /// </summary>
     private void FollowPath()
     {
         if (currentPath == null || currentPath.Count == 0)
         {
-            StopMovement();
+            isFollowingPath = false;
             return;
         }
 
+        // Get current waypoint
         Vector3 targetWaypoint = currentPath[currentWaypointIndex];
+        targetWaypoint.y = transform.position.y;
+
+        // Calculate horizontal movement direction
         Vector3 direction = (targetWaypoint - transform.position).normalized;
-        direction.y = 0;
+        Vector3 moveVector = Vector3.zero;
 
         if (direction != Vector3.zero)
         {
+            // Rotate towards direction
             Quaternion targetRotation = Quaternion.LookRotation(direction);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+
+            // Horizontal movement (already scaled by deltaTime)
+            moveVector = direction * moveSpeed * Time.deltaTime;
         }
 
-        Vector3 movement = direction * moveSpeed * Time.deltaTime;
-        controller.Move(movement);
+        // Apply gravity
+        if (characterController.isGrounded)
+        {
+            verticalVelocity = -2f; // Small downward force to keep grounded
+        }
+        else
+        {
+            verticalVelocity += gravity * Time.deltaTime;
+        }
 
+        // Add vertical component (NOT scaled by deltaTime - that happens in Move())
+        moveVector.y = verticalVelocity * Time.deltaTime;
 
+        // Move the character controller
+        characterController.Move(moveVector);
 
-        float distanceToWaypoint = Vector3.Distance(transform.position, targetWaypoint);
-        if (distanceToWaypoint < waypointReachedDistance)
+        // Update member's position
+        member.Position = transform.position;
+
+        // Check if reached waypoint
+        float distance = Vector3.Distance(transform.position, targetWaypoint);
+        if (distance < waypointReachedDistance)
         {
             currentWaypointIndex++;
 
+            // Reached end of path?
             if (currentWaypointIndex >= currentPath.Count)
             {
+                isFollowingPath = false;
+                currentPath = null;
+                currentWaypointIndex = 0;
                 Debug.Log($"{member.PersonName}: Reached end of path");
-                StopMovement();
             }
         }
     }
 
+    /// <summary>
+    /// Move to a random nearby walkable location.
+    /// </summary>
     private void WanderToRandomLocation()
     {
-        Vector2 randomCircle = Random.insideUnitCircle * wanderRadius;
-        Vector3 randomPoint = transform.position + new Vector3(randomCircle.x, 0, randomCircle.y);
+        if (GridSystem.Instance == null) return;
 
-        Vector2Int gridPos = GridSystem.Instance.WorldToGrid(randomPoint);
-        if (GridSystem.Instance.IsCellWalkable(gridPos))
+        Vector2Int currentGridPos = GridSystem.Instance.WorldToGrid(transform.position);
+        Vector2Int targetGridPos = new Vector2Int(
+            currentGridPos.x + Random.Range(-10, 11),
+            currentGridPos.y + Random.Range(-10, 11)
+        );
+
+        GridCell targetCell = GridSystem.Instance.GetCell(targetGridPos);
+        if (targetCell != null && targetCell.IsWalkable && !targetCell.IsOccupied)
         {
-            Vector3 targetPos = GridSystem.Instance.GridToWorld(gridPos);
-            SetDestination(targetPos);
+            SetDestination(targetCell.WorldPosition);
         }
     }
 
-    private void SetDestination(Vector3 destination)
+    /// <summary>
+    /// Set a destination and find a path to it.
+    /// </summary>
+    public void SetDestination(Vector3 worldPosition)
     {
-        Vector2Int startGrid = GridSystem.Instance.WorldToGrid(transform.position);
-        Vector2Int endGrid = GridSystem.Instance.WorldToGrid(destination);
-
-        List<Vector3> worldPath = GridSystem.Instance.FindPath(startGrid, endGrid);
-
-        if (worldPath != null && worldPath.Count > 0)
+        if (GridSystem.Instance == null)
         {
-            currentPath = worldPath; // Already in world positions
+            Debug.LogWarning($"{member.PersonName}: GridSystem is null!");
+            return;
+        }
+
+        List<Vector3> path = GridSystem.Instance.FindPath(transform.position, worldPosition);
+
+        if (path != null && path.Count > 0)
+        {
+            currentPath = path;
             currentWaypointIndex = 0;
             isFollowingPath = true;
-
-            stuckTimer = 0f;
-            lastPosition = transform.position;
-
-            Debug.Log($"{member.PersonName}: Path found with {currentPath.Count} waypoints");
+            lastPosition = transform.position; // Reset last position for stuck detection
+            stuckTimer = 0f; // Reset stuck timer
+            Debug.Log($"{member.PersonName}: Path found with {path.Count} waypoints");
         }
         else
         {
-            Debug.LogWarning($"{member.PersonName}: No path found to destination");
-            StopMovement();
+            Debug.LogWarning($"{member.PersonName}: Could not find path to {worldPosition}");
+
+            // If we have a building target and can't path to it, clear it
+            if (member.GetTargetStructure() != null)
+            {
+                Debug.Log($"{member.PersonName}: Can't path to building, clearing target");
+                member.ClearTargetBuilding();
+            }
         }
     }
 
-    private void StopMovement()
+    /// <summary>
+    /// Stop current movement.
+    /// </summary>
+    public void StopMovement()
     {
         isFollowingPath = false;
         currentPath = null;
         currentWaypointIndex = 0;
+        stuckTimer = 0f;
+        verticalVelocity = 0f;
+    }
+
+    private void UpdateDisplay()
+    {
+        if (nameLabel != null)
+        {
+            nameLabel.text = member.PersonName;
+        }
+
+        if (stateLabel != null)
+        {
+            stateLabel.text = member.CurrentState;
+            stateLabel.color = GetStateColor(member.CurrentState);
+        }
+
+        if (statusIndicator != null)
+        {
+            var renderer = statusIndicator.GetComponent<Renderer>();
+            if (renderer != null)
+            {
+                renderer.material.color = GetStateColor(member.CurrentState);
+            }
+        }
+    }
+
+    private Color GetStateColor(string state)
+    {
+        switch (state)
+        {
+            case "Idle": return Color.green;
+            case "SeekingFood": return Color.yellow;
+            case "Resting": return Color.blue;
+            case "Socializing": return Color.magenta;
+            case "Working": return Color.cyan;
+            default: return Color.white;
+        }
+    }
+
+    private void CreateUIElements()
+    {
+        GameObject nameObj = new GameObject("NameLabel");
+        nameObj.transform.SetParent(transform);
+        nameObj.transform.localPosition = new Vector3(0, 2.5f, 0);
+        nameLabel = nameObj.AddComponent<TextMeshPro>();
+        nameLabel.fontSize = 3;
+        nameLabel.alignment = TextAlignmentOptions.Center;
+        nameLabel.color = Color.white;
+
+        GameObject stateObj = new GameObject("StateLabel");
+        stateObj.transform.SetParent(transform);
+        stateObj.transform.localPosition = new Vector3(0, 2.2f, 0);
+        stateLabel = stateObj.AddComponent<TextMeshPro>();
+        stateLabel.fontSize = 2;
+        stateLabel.alignment = TextAlignmentOptions.Center;
+
+        statusIndicator = transform.Find("StatusIndicator")?.gameObject;
+    }
+
+    private void FaceUIToCamera()
+    {
+        if (Camera.main == null) return;
+
+        if (nameLabel != null)
+        {
+            nameLabel.transform.LookAt(Camera.main.transform);
+            nameLabel.transform.Rotate(0, 180, 0);
+        }
+
+        if (stateLabel != null)
+        {
+            stateLabel.transform.LookAt(Camera.main.transform);
+            stateLabel.transform.Rotate(0, 180, 0);
+        }
     }
 
     public Member GetMember() => member;
+
+    private void OnDrawGizmos()
+    {
+        if (currentPath != null && currentPath.Count > 1)
+        {
+            Gizmos.color = Color.cyan;
+            for (int i = 0; i < currentPath.Count - 1; i++)
+            {
+                Gizmos.DrawLine(currentPath[i] + Vector3.up * 0.1f, currentPath[i + 1] + Vector3.up * 0.1f);
+            }
+
+            if (currentWaypointIndex < currentPath.Count)
+            {
+                Gizmos.color = Color.yellow;
+                Gizmos.DrawSphere(currentPath[currentWaypointIndex], 0.3f);
+            }
+        }
+    }
 }

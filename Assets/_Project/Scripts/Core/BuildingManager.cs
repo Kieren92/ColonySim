@@ -43,7 +43,6 @@ public class BuildingManager : MonoBehaviour
 
     private void Update()
     {
-        Debug.Log($"Update: isPlacingBuilding = {isPlacingBuilding}");
         HandleKeyboardShortcuts();
         
         if (isPlacingBuilding)
