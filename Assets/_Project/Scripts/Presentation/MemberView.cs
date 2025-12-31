@@ -13,6 +13,7 @@ public class MemberView : MonoBehaviour
     private Member member;
 
     private Vector3? cachedTargetPosition = null;
+    private Structure lastAttemptedTarget = null;
 
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 3f;
@@ -82,7 +83,28 @@ public class MemberView : MonoBehaviour
         {
             cachedTargetPosition = null; // Clear cache when no target
             stuckTimer = 0f; // Reset stuck timer
+            lastAttemptedTarget = null; // Reset attempted target
             return;
+        }
+
+        // If target changed to a DIFFERENT position, reset our attempt tracker
+        if (targetStructure != lastAttemptedTarget)
+        {
+            // Check if this is actually a different building or just a new reference to the same one
+            Vector3 newTargetPosition = targetStructure.GetUsePosition(member);
+
+            // Only reset if the position is different (meaning it's actually a different building)
+            if (!cachedTargetPosition.HasValue || Vector3.Distance(newTargetPosition, cachedTargetPosition.Value) > 0.1f)
+            {
+                lastAttemptedTarget = targetStructure;
+                cachedTargetPosition = null;
+                isFollowingPath = false; // Reset path following state for new target
+            }
+            else
+            {
+                // Same position, just update the reference but keep the cached position
+                lastAttemptedTarget = targetStructure;
+            }
         }
 
         if (member.IsUsingBuilding())
@@ -92,8 +114,8 @@ public class MemberView : MonoBehaviour
             return;
         }
 
-        // CRITICAL FIX: Only get position once, then cache it
-        if (!isFollowingPath)
+        // Only try to path ONCE per target - when we haven't cached the position yet
+        if (!isFollowingPath && cachedTargetPosition == null)
         {
             // Get the use position ONCE
             Vector3 targetWorldPos = targetStructure.GetUsePosition(member);
@@ -110,6 +132,7 @@ public class MemberView : MonoBehaviour
         {
             float distanceToTarget = Vector3.Distance(transform.position, cachedTargetPosition.Value);
 
+            // Check for arrival while following path or after reaching end
             if (distanceToTarget <= 2f)
             {
                 Debug.Log($"{member.PersonName}: Arrived at {targetStructure.Definition.structureName}! (distance: {distanceToTarget:F2})");
@@ -117,15 +140,23 @@ public class MemberView : MonoBehaviour
                 StopMovement();
                 member.OnArrivedAtBuilding();
                 cachedTargetPosition = null; // Clear cache after arrival
+                lastAttemptedTarget = null; // Clear attempted target after successful arrival
                 stuckTimer = 0f; // Reset stuck timer
             }
-            else if (!isFollowingPath && distanceToTarget <= 3f)
+            // Fallback: if we finished the path but didn't get close enough, check larger radius
+            else if (!isFollowingPath && distanceToTarget <= 5f)
             {
                 Debug.Log($"{member.PersonName}: Fallback arrival at {targetStructure.Definition.structureName} (distance: {distanceToTarget:F2})");
 
                 member.OnArrivedAtBuilding();
                 cachedTargetPosition = null; // Clear cache after arrival
+                lastAttemptedTarget = null; // Clear attempted target after successful arrival
                 stuckTimer = 0f; // Reset stuck timer
+            }
+            else if (!isFollowingPath)
+            {
+                // Path ended but we're too far - log it
+                Debug.LogWarning($"{member.PersonName}: Reached end of path but too far from target (distance: {distanceToTarget:F2})");
             }
         }
     }
@@ -146,15 +177,6 @@ public class MemberView : MonoBehaviour
         // Calculate how far we've moved since last check
         float distanceMoved = Vector3.Distance(transform.position, lastPosition);
 
-        // Debug log every frame while moving
-        if (currentPath != null && currentWaypointIndex < currentPath.Count)
-        {
-            Debug.Log($"{member.PersonName}: Pos=({transform.position.x:F1}, {transform.position.z:F1}), " +
-                      $"Moved={distanceMoved:F2}, Waypoint[{currentWaypointIndex}/{currentPath.Count}] at " +
-                      $"({currentPath[currentWaypointIndex].x:F1}, {currentPath[currentWaypointIndex].z:F1}), " +
-                      $"dist={Vector3.Distance(transform.position, currentPath[currentWaypointIndex]):F2}");
-        }
-
         if (distanceMoved < STUCK_THRESHOLD)
         {
             // Not moving much - increment stuck timer
@@ -172,6 +194,8 @@ public class MemberView : MonoBehaviour
                 }
 
                 StopMovement();
+                cachedTargetPosition = null;
+                lastAttemptedTarget = null;
                 stuckTimer = 0f;
             }
         }
@@ -190,27 +214,27 @@ public class MemberView : MonoBehaviour
     /// </summary>
     private void HandleMovement()
     {
-        // Don't wander if we have a building target
-        if (member.GetTargetStructure() != null)
-        {
-            return; // CheckBuildingTarget() handles this
-        }
-
+        // If following a path, follow it regardless of target status
         if (isFollowingPath)
         {
             FollowPath();
+            return;
         }
-        else
+
+        // Don't wander if we have a building target (CheckBuildingTarget will handle setting up path)
+        if (member.GetTargetStructure() != null)
         {
-            // Don't wander if using a building
-            if (!member.IsUsingBuilding())
+            return;
+        }
+
+        // Wander when idle
+        if (!member.IsUsingBuilding())
+        {
+            wanderTimer += Time.deltaTime;
+            if (wanderTimer >= wanderInterval)
             {
-                wanderTimer += Time.deltaTime;
-                if (wanderTimer >= wanderInterval)
-                {
-                    wanderTimer = 0f;
-                    WanderToRandomLocation();
-                }
+                wanderTimer = 0f;
+                WanderToRandomLocation();
             }
         }
     }
@@ -327,10 +351,13 @@ public class MemberView : MonoBehaviour
             Debug.LogWarning($"{member.PersonName}: Could not find path to {worldPosition}");
 
             // If we have a building target and can't path to it, clear it
+            // But DON'T clear cachedTargetPosition - let the stuck detection or target change handle that
             if (member.GetTargetStructure() != null)
             {
                 Debug.Log($"{member.PersonName}: Can't path to building, clearing target");
                 member.ClearTargetBuilding();
+                // Note: cachedTargetPosition and lastAttemptedTarget are intentionally NOT cleared here
+                // This prevents infinite retry loops - the cooldown system will provide a new target later
             }
         }
     }

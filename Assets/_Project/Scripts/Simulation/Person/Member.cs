@@ -10,7 +10,11 @@ using Ideology.Structures;
 public class Member : Person
 {
     private Dictionary<Building, float> unreachableBuildingCooldowns = new Dictionary<Building, float>();
-    private const float BUILDING_COOLDOWN_TIME = 30f; // Don't retry same building for 30 seconds
+    private const float BUILDING_COOLDOWN_TIME = 5f; // Don't retry same building for 5 seconds (reduced for debugging)
+
+    // Track when we last failed to find a structure for a specific need
+    private Dictionary<string, float> unfulfillableNeedCooldowns = new Dictionary<string, float>();
+    private const float UNFULFILLABLE_NEED_COOLDOWN = 10f; // Don't spam logs for 10 seconds
 
     // Member-specific data
     public float IdeologyAlignment { get; private set; } = 50f;
@@ -64,6 +68,9 @@ public class Member : Person
         // Update cooldowns for unreachable buildings
         UpdateBuildingCooldowns(deltaTime);
 
+        // Update cooldowns for unfulfillable needs
+        UpdateUnfulfillableNeedCooldowns(deltaTime);
+
         // Update building usage
         if (isUsingBuilding)
         {
@@ -100,6 +107,27 @@ public class Member : Person
         {
             unreachableBuildingCooldowns.Remove(building);
             Debug.Log($"{PersonName}: {building.Definition.structureName} removed from cooldown, can try again");
+        }
+    }
+
+    private void UpdateUnfulfillableNeedCooldowns(float deltaTime)
+    {
+        List<string> toRemove = new List<string>();
+        List<string> keys = new List<string>(unfulfillableNeedCooldowns.Keys);
+
+        foreach (var needName in keys)
+        {
+            unfulfillableNeedCooldowns[needName] -= deltaTime;
+
+            if (unfulfillableNeedCooldowns[needName] <= 0)
+            {
+                toRemove.Add(needName);
+            }
+        }
+
+        foreach (var needName in toRemove)
+        {
+            unfulfillableNeedCooldowns.Remove(needName);
         }
     }
 
@@ -182,16 +210,32 @@ public class Member : Person
             structure = null; // Treat as if no structure found
         }
 
-        Debug.Log($"{PersonName}: Need {needDef.needName} is critical ({Needs.GetNeedValue(needDef.needName):F1}), looking for structure... Found: {structure?.Definition.structureName ?? "NONE"}");
+        // Only log if we haven't recently logged about this unfulfillable need
+        bool shouldLog = !unfulfillableNeedCooldowns.ContainsKey(needDef.needName);
+
+        if (shouldLog)
+        {
+            Debug.Log($"{PersonName}: Need {needDef.needName} is critical ({Needs.GetNeedValue(needDef.needName):F1}), looking for structure... Found: {structure?.Definition.structureName ?? "NONE"}");
+        }
 
         if (structure != null)
         {
             targetStructure = structure;
             ChangeState($"GoingTo_{structure.Definition.structureName}");
-            Debug.Log($"{PersonName}: Target set to {structure.Definition.structureName} at grid {structure.GridPosition}");
+
+            if (shouldLog)
+            {
+                Debug.Log($"{PersonName}: Target set to {structure.Definition.structureName} at grid {structure.GridPosition}");
+            }
         }
         else
         {
+            // No structure available - add to cooldown to prevent spam
+            if (shouldLog)
+            {
+                unfulfillableNeedCooldowns[needDef.needName] = UNFULFILLABLE_NEED_COOLDOWN;
+            }
+
             // No structure available (or all structures on cooldown)
             switch (needDef.needName)
             {
@@ -219,7 +263,7 @@ public class Member : Person
     /// </summary>
     private Structure FindStructureForNeed(string needName)
     {
-        if (Ideology.StructureManager.Instance == null)
+        if (StructureManager.Instance == null)
         {
             // Fallback to old BuildingManager if StructureManager not available
             if (BuildingManager.Instance != null)
@@ -229,7 +273,7 @@ public class Member : Person
             return null;
         }
 
-        return Ideology.StructureManager.Instance.FindStructureForNeed(needName);
+        return StructureManager.Instance.FindStructureForNeed(needName);
     }
 
     /// <summary>
@@ -270,8 +314,7 @@ public class Member : Person
         if (targetStructure != null)
         {
             // Try to start using the structure
-            targetStructure.StartUsing(this);
-            bool success = true;
+            bool success = targetStructure.StartUsing(this);
 
             if (success)
             {
@@ -294,79 +337,40 @@ public class Member : Person
     /// </summary>
     private void UpdateBuildingUsage(float deltaTime)
     {
-        if (targetStructure == null)
-        {
-            isUsingBuilding = false;
-            return;
-        }
+        if (targetStructure == null) return;
 
         buildingUseTimer += deltaTime;
 
-        // Check if this is a work building or work station
-        bool isWorkStructure = false;
+        // Get what this structure does
         string satisfiesNeed = null;
         float needRestoreAmount = 0f;
         float useDuration = 0f;
-        List<SkillContribution> productionSkills = null;
+
         if (targetStructure is Building building)
         {
-            productionSkills = building.Definition.productionSkills != null
-                ? new List<SkillContribution>(building.Definition.productionSkills)
-                : null;
+            satisfiesNeed = building.Definition.satisfiesNeed;
+            needRestoreAmount = building.Definition.needRestoreAmount;
+            useDuration = building.Definition.useDuration;
         }
         else if (targetStructure is InteriorStructure interiorStructure)
         {
-            isWorkStructure = interiorStructure.Definition.isWorkStation;
             satisfiesNeed = interiorStructure.Definition.satisfiesNeed;
             needRestoreAmount = interiorStructure.Definition.needRestoreAmount;
             useDuration = interiorStructure.Definition.useDuration;
-            // TODO: Add production skills to InteriorStructureDefinition
         }
 
-        if (isWorkStructure)
+        if (!string.IsNullOrEmpty(satisfiesNeed))
         {
-            // Working - set state
-            isWorking = true;
-            isResting = false;
-
-            // Track work time
-            workTimer += deltaTime;
-
-            // Improve relevant skills while working
-            if (productionSkills != null)
-            {
-                foreach (var skillContrib in productionSkills)
-                {
-                    if (skillContrib.skill != null)
-                    {
-                        // Gain experience based on weight
-                        float xpGain = deltaTime * 0.1f * skillContrib.weight;
-                        Skills.AddExperience(skillContrib.skill.skillName, xpGain);
-                    }
-                }
-            }
-
-            // Take a break after work session
-            if (workTimer >= workSessionDuration)
-            {
-                workTimer = 0f;
-                FinishUsingBuilding();
-                ChangeState("TakingBreak");
-                return;
-            }
-        }
-        else
-        {
-            // For food/water buildings, consume actual items
+            // Check if this is food/water (consumable resources)
             if (satisfiesNeed == "Hunger" || satisfiesNeed == "Thirst")
             {
-                // Only consume once when entering
-                if (buildingUseTimer < 0.1f)
+                // Try to consume an item at regular intervals (every 2 seconds)
+                if (buildingUseTimer % 2f < deltaTime)
                 {
                     bool consumed = TryConsumeItem(satisfiesNeed);
-                    if (!consumed)
+                    if (consumed)
                     {
-                        Debug.LogWarning($"{PersonName} went to {targetStructure.Definition.structureName} but no items available!");
+                        // Finished consuming
                         FinishUsingBuilding();
                         return;
                     }
@@ -474,21 +478,23 @@ public class Member : Person
     }
 
     /// <summary>
-    /// Finish using the current structure.
+    /// Done using building - clean up and return to AI.
     /// </summary>
-    public void FinishUsingBuilding()
+    private void FinishUsingBuilding()
     {
         if (targetStructure != null)
         {
             targetStructure.StopUsing(this);
+            Debug.Log($"{PersonName}: Finished using {targetStructure.Definition.structureName}");
         }
 
         targetStructure = null;
         isUsingBuilding = false;
         buildingUseTimer = 0f;
-
-        Debug.Log($"{PersonName} finished using building and is now idle");
+        ChangeState("Idle");
     }
+
+    // ===== WORK SYSTEM =====
 
     /// <summary>
     /// Assign this member to work at a building.
@@ -530,9 +536,9 @@ public class Member : Person
     }
 
     /// <summary>
-    /// Get assigned work building.
+    /// Get the currently assigned work building.
     /// </summary>
-    public Building GetAssignedWork() => assignedWorkBuilding;
+    public Building GetAssignedWorkBuilding() => assignedWorkBuilding;
 
     /// <summary>
     /// Is this member currently assigned to work?
@@ -540,42 +546,40 @@ public class Member : Person
     public bool HasWorkAssignment() => assignedWorkBuilding != null;
 
     /// <summary>
-    /// Get the current target structure (for MemberView to know where to go).
+    /// Is this member currently working?
+    /// </summary>
+    public bool IsWorking() => isWorking;
+
+    /// <summary>
+    /// Get the member's current target structure.
     /// </summary>
     public Structure GetTargetStructure() => targetStructure;
 
     /// <summary>
-    /// Set the target structure for this member to use.
+    /// Get the current target building (alias for MemberView compatibility).
     /// </summary>
-    public void SetTargetStructure(Structure structure)
-    {
-        targetStructure = structure;
-    }
+    public Structure GetTargetBuilding() => targetStructure;
 
     /// <summary>
-    /// Check if currently using a building.
+    /// Is member currently using a building?
     /// </summary>
     public bool IsUsingBuilding() => isUsingBuilding;
 
-    public void AdjustIdeologyAlignment(float amount)
-    {
-        float oldAlignment = IdeologyAlignment;
-        IdeologyAlignment = Mathf.Clamp(IdeologyAlignment + amount, 0f, 100f);
+    // ===== IDEOLOGY =====
 
-        if (Mathf.Abs(oldAlignment - IdeologyAlignment) > 0.1f)
-        {
-            GameEvents.TriggerBeliefChanged(this, "CommuneAlignment", IdeologyAlignment);
-        }
+    /// <summary>
+    /// Adjust member's ideology alignment.
+    /// Positive = more collective, Negative = more individual.
+    /// </summary>
+    public void AdjustIdeologyAlignment(float delta)
+    {
+        IdeologyAlignment = Mathf.Clamp(IdeologyAlignment + delta, 0f, 100f);
     }
 
-    public override string GetDescription()
-    {
-        return $"{base.GetDescription()}, Role: {Role}, Ideology: {IdeologyAlignment:F0}%";
-    }
+    // ===== ROLE SYSTEM =====
 
     /// <summary>
     /// Assign a role to this member.
-    /// PUBLIC: Called by role assignment system (to be implemented).
     /// </summary>
     public void AssignRole(RoleDefinition role)
     {
@@ -633,6 +637,3 @@ public class Member : Person
         Debug.Log($"{PersonName}: Cleared unreachable target structure");
     }
 }
-
-
-
