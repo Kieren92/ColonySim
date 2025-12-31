@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using ColonySim.Structures;
 
 /// <summary>
 /// Central event system for game-wide communication.
@@ -42,6 +43,14 @@ public static class GameEvents
     /// </summary>
     public static event Action<Member, string> OnMemberLeft; // member, reason
 
+    // ===== BUILDING/STRUCTURE EVENTS =====
+
+    /// <summary>
+    /// Fired when a building is placed in the world.
+    /// Listeners: UI, achievement system, tutorial system
+    /// </summary>
+    public static event Action<Building> OnBuildingPlaced;
+
     // ===== IDEOLOGY EVENTS =====
 
     /// <summary>
@@ -68,10 +77,9 @@ public static class GameEvents
     {
         OnNeedCritical?.Invoke(person, need, currentValue);
 
-        // Optional: Log for debugging
-        #if UNITY_EDITOR
+#if UNITY_EDITOR
         Debug.Log($"[EVENT] {person.PersonName}'s {need.needName} is critical: {currentValue:F1}");
-        #endif
+#endif
     }
 
     public static void TriggerPersonStateChanged(Person person, string oldState, string newState)
@@ -88,14 +96,23 @@ public static class GameEvents
     {
         OnMemberJoined?.Invoke(member);
 
-        #if UNITY_EDITOR
+#if UNITY_EDITOR
         Debug.Log($"[EVENT] New member joined: {member.PersonName}");
-        #endif
+#endif
     }
 
     public static void TriggerMemberLeft(Member member, string reason)
     {
         OnMemberLeft?.Invoke(member, reason);
+    }
+
+    public static void TriggerBuildingPlaced(Building building)
+    {
+        OnBuildingPlaced?.Invoke(building);
+
+#if UNITY_EDITOR
+        Debug.Log($"[EVENT] Building placed: {building.Definition.structureName}");
+#endif
     }
 
     public static void TriggerBeliefChanged(Person person, string beliefName, float newAlignment)
@@ -119,6 +136,7 @@ public static class GameEvents
         OnSkillChanged = null;
         OnMemberJoined = null;
         OnMemberLeft = null;
+        OnBuildingPlaced = null;
         OnBeliefChanged = null;
         OnSocialInteraction = null;
     }
