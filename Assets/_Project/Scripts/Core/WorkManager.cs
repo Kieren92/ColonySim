@@ -1,43 +1,37 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
+using ColonySim.Structures;
 
-/// <summary>
-/// Manages work assignments for the commune.
-/// WHY: Automates assigning members to work buildings.
-/// </summary>
 public class WorkManager : MonoBehaviour
 {
-    [Header("Settings")]
-    [Tooltip("How often to check and assign work (seconds)")]
+    public static WorkManager Instance { get; private set; }
+
+    [Header("Work Assignment")]
+    [Tooltip("How often to check for idle members and assign work (seconds)")]
     [SerializeField] private float assignmentCheckInterval = 5f;
 
-    [Tooltip("Automatically assign idle members to work?")]
-    [SerializeField] private bool autoAssignWork = true;
-
-    private float assignmentTimer = 0f;
-
-    // Singleton
-    public static WorkManager Instance { get; private set; }
+    private float timeSinceLastCheck = 0f;
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
         {
             Destroy(gameObject);
-            return;
         }
-        Instance = this;
     }
 
     private void Update()
     {
-        if (!autoAssignWork) return;
+        timeSinceLastCheck += Time.deltaTime;
 
-        assignmentTimer += Time.deltaTime;
-
-        if (assignmentTimer >= assignmentCheckInterval)
+        if (timeSinceLastCheck >= assignmentCheckInterval)
         {
-            assignmentTimer = 0f;
+            timeSinceLastCheck = 0f;
             AssignIdleMembersToWork();
         }
     }
@@ -50,72 +44,91 @@ public class WorkManager : MonoBehaviour
         if (SimulationManager.Instance == null || BuildingManager.Instance == null)
             return;
 
-        // Get all members without work assignments
-        var members = SimulationManager.Instance.GetAllMembers();
-        var idleMembers = new List<Member>();
+        List<Member> allMembers = SimulationManager.Instance.GetAllMembers();
 
-        foreach (var member in members)
+        foreach (var member in allMembers)
         {
-            if (member.IsUsingBuilding() || member.GetTargetBuilding() != null)
+            // Skip if member is already assigned to work
+            if (member.HasWorkAssignment())
+                continue;
+
+            // Skip if member is currently using a building for needs
+            if (member.GetTargetStructure() != null)
             {
                 Debug.Log($"Skipping {member.PersonName} - currently busy with a building");
                 continue;
             }
 
-            if (!member.HasWorkAssignment())
+            // Find a work building that needs workers
+            Building workBuilding = FindWorkBuildingNeedingWorkers();
+
+            if (workBuilding != null)
             {
-                idleMembers.Add(member);
-            }
-        }
-
-        if (idleMembers.Count == 0)
-        {
-            // Everyone already has work
-            return;
-        }
-
-        // Find work buildings that need workers
-        var allBuildings = BuildingManager.Instance.GetAllBuildings();
-
-        foreach (var building in allBuildings)
-        {
-            if (!building.Definition.isWorkBuilding) continue;
-
-            // Check if building needs more workers
-            int currentWorkers = building.GetAssignedWorkers().Count;
-            int capacity = building.Definition.workerCapacity;
-
-            if (currentWorkers < capacity && idleMembers.Count > 0)
-            {
-                // Assign next idle member
-                Member member = idleMembers[0];
-                bool success = member.AssignToWork(building);
+                // Assign member to work
+                bool success = member.AssignToWork(workBuilding);
 
                 if (success)
                 {
-                    idleMembers.RemoveAt(0);
-                    Debug.Log($"WorkManager: Assigned {member.PersonName} to {building.Definition.buildingName}");
+                    Debug.Log($"WorkManager: Assigned {member.PersonName} to {workBuilding.Definition.structureName}");
                 }
             }
         }
     }
 
     /// <summary>
-    /// Manually assign a specific member to a specific building.
-    /// PUBLIC: Can be called by UI or other systems.
+    /// Find a work building that needs more workers.
+    /// </summary>
+    private Building FindWorkBuildingNeedingWorkers()
+    {
+        List<Building> allBuildings = BuildingManager.Instance.GetAllBuildings();
+
+        foreach (var building in allBuildings)
+        {
+            if (building.Definition.isWorkBuilding)
+            {
+                int currentWorkers = building.GetAssignedWorkers().Count;
+                int maxWorkers = building.Definition.workerCapacity;
+
+                if (currentWorkers < maxWorkers)
+                {
+                    return building;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Manually assign a member to a specific work building.
+    /// PUBLIC: Called by UI or player commands.
     /// </summary>
     public bool AssignMemberToWork(Member member, Building workBuilding)
     {
         if (member == null || workBuilding == null)
             return false;
 
+        if (!workBuilding.Definition.isWorkBuilding)
+        {
+            Debug.LogWarning($"{workBuilding.Definition.structureName} is not a work building!");
+            return false;
+        }
+
+        // Unassign from current work first
+        if (member.HasWorkAssignment())
+        {
+            member.UnassignFromWork();
+        }
+
+        // Assign to new work
         return member.AssignToWork(workBuilding);
     }
 
     /// <summary>
     /// Unassign a member from their current work.
+    /// PUBLIC: Called by UI or player commands.
     /// </summary>
-    public void UnassignMember(Member member)
+    public void UnassignMemberFromWork(Member member)
     {
         if (member != null)
         {
@@ -128,34 +141,29 @@ public class WorkManager : MonoBehaviour
     /// </summary>
     public List<Member> GetWorkersAtBuilding(Building building)
     {
-        if (building == null) return new List<Member>();
+        if (building == null)
+            return new List<Member>();
+
         return building.GetAssignedWorkers();
     }
 
     /// <summary>
-    /// Get production summary for all work buildings.
+    /// Get all work buildings and their worker counts.
     /// </summary>
-    public string GetProductionSummary()
+    public Dictionary<Building, int> GetWorkBuildingStatus()
     {
-        if (BuildingManager.Instance == null)
-            return "No buildings";
+        Dictionary<Building, int> status = new Dictionary<Building, int>();
 
-        var allBuildings = BuildingManager.Instance.GetAllBuildings();
-        string summary = "Production Summary:\n";
+        List<Building> allBuildings = BuildingManager.Instance.GetAllBuildings();
 
         foreach (var building in allBuildings)
         {
             if (building.Definition.isWorkBuilding)
             {
-                int workers = building.GetAssignedWorkers().Count;
-                int activeWorkers = building.GetActiveWorkerCount();
-                string itemName = building.Definition.producedItem?.itemName ?? "Unknown";
-                float rate = building.Definition.productionRate;
-
-                summary += $"{building.Definition.buildingName}: {activeWorkers}/{workers} workers, producing {rate}/hour {itemName}\n";
+                status[building] = building.GetAssignedWorkers().Count;
             }
         }
 
-        return summary;
+        return status;
     }
 }

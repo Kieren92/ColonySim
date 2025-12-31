@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ColonySim.Structures
 {
@@ -9,6 +10,10 @@ namespace ColonySim.Structures
 
         private Dictionary<InteriorStructureSlot, InteriorStructure> placedInteriorStructures
             = new Dictionary<InteriorStructureSlot, InteriorStructure>();
+
+        // Worker management
+        private List<Member> assignedWorkers = new List<Member>();
+        private float productionProgress = 0f;
 
         public Building(BuildingDefinition definition, Vector2Int gridPos, Vector3 worldPos, GameObject gameObject)
             : base(definition, gridPos, worldPos, gameObject)
@@ -100,5 +105,75 @@ namespace ColonySim.Structures
             }
             return null;
         }
+
+        // Worker management methods
+        public bool AssignWorker(Member member)
+        {
+            if (!Definition.isWorkBuilding)
+            {
+                Debug.LogWarning($"{Definition.structureName} is not a work building!");
+                return false;
+            }
+
+            if (assignedWorkers.Count >= Definition.workerCapacity)
+            {
+                Debug.LogWarning($"{Definition.structureName} is at worker capacity!");
+                return false;
+            }
+
+            if (!assignedWorkers.Contains(member))
+            {
+                assignedWorkers.Add(member);
+                Debug.Log($"{member.PersonName} assigned to work at {Definition.structureName}");
+                return true;
+            }
+
+            return false;
+        }
+
+        public void UnassignWorker(Member member)
+        {
+            if (assignedWorkers.Contains(member))
+            {
+                assignedWorkers.Remove(member);
+                Debug.Log($"{member.PersonName} unassigned from {Definition.structureName}");
+            }
+        }
+
+        public List<Member> GetAssignedWorkers() => new List<Member>(assignedWorkers);
+
+        public int GetActiveWorkerCount()
+        {
+            int count = 0;
+            foreach (var worker in assignedWorkers)
+            {
+                if (currentUsers.Contains(worker))
+                {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        public void UpdateProduction(float deltaTime)
+        {
+            if (!Definition.isWorkBuilding || Definition.producedItem == null)
+                return;
+
+            int activeWorkers = currentUsers.Count(user => assignedWorkers.Contains(user));
+            if (activeWorkers > 0)
+            {
+                productionProgress += deltaTime * Definition.productionRate * activeWorkers;
+
+                if (productionProgress >= 60f)
+                {
+                    productionProgress = 0f;
+                    Debug.Log($"{Definition.structureName} produced {Definition.producedItem.itemName}");
+                }
+            }
+        }
+
+        public bool IsOperational => Definition.IsOperational;
+        public bool HasCapacity() => currentUsers.Count < Definition.maxOccupants;
     }
 }

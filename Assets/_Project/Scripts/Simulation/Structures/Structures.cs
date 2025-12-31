@@ -35,12 +35,17 @@ namespace ColonySim.Structures
             return currentUsers.Count < totalCapacity;
         }
 
-        public virtual void StartUsing(Member member)
+        public virtual bool StartUsing(Member member)
         {
+            if (!CanUse(member))
+                return false;
+
             if (!currentUsers.Contains(member))
             {
                 currentUsers.Add(member);
             }
+
+            return true;
         }
 
         public virtual void StopUsing(Member member)

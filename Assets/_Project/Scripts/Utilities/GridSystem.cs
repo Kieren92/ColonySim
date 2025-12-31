@@ -285,6 +285,37 @@ public class GridSystem : MonoBehaviour
         return null;
     }
 
+    /// <summary>
+    /// Check if a grid cell is walkable (exists and not occupied by unwalkable structure)
+    /// </summary>
+    public bool IsCellWalkable(Vector2Int gridPos)
+    {
+        // Check if position is within grid bounds
+        if (!IsWithinBounds(gridPos))
+        {
+            return false;
+        }
+
+        GridCell cell = GetCell(gridPos);
+        if (cell == null)
+        {
+            return false;
+        }
+
+        // Cell is walkable if it's not occupied
+        // Later we can add logic for structures that block movement vs. those that don't
+        return !cell.IsOccupied;
+    }
+
+    /// <summary>
+    /// Check if position is within grid bounds
+    /// </summary>
+    public bool IsWithinBounds(Vector2Int gridPos)
+    {
+        return gridPos.x >= 0 && gridPos.x < gridWidth &&
+               gridPos.y >= 0 && gridPos.y < gridHeight;
+    }
+
     public bool IsValidGridPosition(Vector2Int gridPos)
     {
         return gridPos.x >= 0 && gridPos.x < gridWidth &&
@@ -348,37 +379,5 @@ public class GridSystem : MonoBehaviour
                 Gizmos.DrawWireCube(cell.WorldPosition, Vector3.one * cellSize * 0.9f);
             }
         }
-    }
-
-    /// <summary>
-    /// Check if a grid cell is walkable (exists and not occupied by unwalkable structure)
-    /// </summary>
-    public bool IsCellWalkable(Vector2Int gridPos)
-    {
-        // Check if position is within grid bounds
-        if (!IsWithinBounds(gridPos))
-        {
-            return false;
-        }
-
-        GridCell cell = GetCell(gridPos);
-        if (cell == null)
-        {
-            return false;
-        }
-
-        // Cell is walkable if it's not occupied OR if it's occupied by something walkable
-        // For now, we'll say a cell is walkable if it's not occupied
-        // Later we can add logic for structures that block movement vs. those that don't
-        return !cell.IsOccupied;
-    }
-
-    /// <summary>
-    /// Check if position is within grid bounds
-    /// </summary>
-    public bool IsWithinBounds(Vector2Int gridPos)
-    {
-        return gridPos.x >= 0 && gridPos.x < gridWidth &&
-               gridPos.y >= 0 && gridPos.y < gridHeight;
     }
 }

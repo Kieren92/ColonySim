@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using ColonySim;
 using ColonySim.Structures;
 
 /// <summary>
@@ -218,7 +219,7 @@ public class Member : Person
     /// </summary>
     private Structure FindStructureForNeed(string needName)
     {
-        if (StructureManager.Instance == null)
+        if (ColonySim.StructureManager.Instance == null)
         {
             // Fallback to old BuildingManager if StructureManager not available
             if (BuildingManager.Instance != null)
@@ -228,7 +229,7 @@ public class Member : Person
             return null;
         }
 
-        return StructureManager.Instance.FindStructureForNeed(needName);
+        return ColonySim.StructureManager.Instance.FindStructureForNeed(needName);
     }
 
     /// <summary>
@@ -269,7 +270,8 @@ public class Member : Person
         if (targetStructure != null)
         {
             // Try to start using the structure
-            bool success = targetStructure.StartUsing(this);
+            targetStructure.StartUsing(this);
+            bool success = true;
 
             if (success)
             {
@@ -306,14 +308,11 @@ public class Member : Person
         float needRestoreAmount = 0f;
         float useDuration = 0f;
         List<SkillContribution> productionSkills = null;
-
         if (targetStructure is Building building)
         {
-            isWorkStructure = building.Definition.isWorkBuilding;
-            satisfiesNeed = building.Definition.satisfiesNeed;
-            needRestoreAmount = building.Definition.needRestoreAmount;
-            useDuration = building.Definition.useDuration;
-            productionSkills = building.Definition.productionSkills;
+            productionSkills = building.Definition.productionSkills != null
+                ? new List<SkillContribution>(building.Definition.productionSkills)
+                : null;
         }
         else if (targetStructure is InteriorStructure interiorStructure)
         {
@@ -634,3 +633,6 @@ public class Member : Person
         Debug.Log($"{PersonName}: Cleared unreachable target structure");
     }
 }
+
+
+

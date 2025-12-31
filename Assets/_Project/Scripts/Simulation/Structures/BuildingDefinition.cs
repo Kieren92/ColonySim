@@ -27,6 +27,19 @@ namespace ColonySim.Structures
         public bool isWorkBuilding = false;
         public List<WorkType> supportedWorkTypes = new List<WorkType>();
         public List<SkillRequirement> requiredSkills = new List<SkillRequirement>();
+
+        [Header("Production (Work Buildings)")]
+        public ItemDefinition producedItem;
+        public float productionRate = 5f;
+        public int workerCapacity = 2;
+        public SkillContribution[] productionSkills;
+        public SkillCombineMode skillCombineMode = SkillCombineMode.Additive;
+
+        [Header("Visual")]
+        public Color buildingColor = Color.gray;
+
+        [Header("Operational")]
+        public bool IsOperational = true; // Can be set to false if building is damaged/disabled
     }
 
     [System.Serializable]

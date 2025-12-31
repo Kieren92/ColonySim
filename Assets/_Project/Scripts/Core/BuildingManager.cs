@@ -1,6 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using ColonySim;
+using ColonySim.Structures;
 
 /// <summary>
 /// Manages all buildings in the commune.
@@ -100,7 +102,7 @@ public class BuildingManager : MonoBehaviour
             renderer.material = previewMat;
         }
 
-        Debug.Log($"Started placing: {definition.buildingName}");
+        Debug.Log($"Started placing: {definition.structureName}");
     }
 
     /// <summary>
@@ -239,7 +241,10 @@ public class BuildingManager : MonoBehaviour
         }
 
         // Register with StructureManager
-        StructureManager.Instance.RegisterBuilding(building);
+        if (ColonySim.StructureManager.Instance != null)
+        {
+            ColonySim.StructureManager.Instance.RegisterBuilding(building);
+        }
 
         // Add BuildingView component for visualization
         BuildingView buildingView = buildingObject.AddComponent<BuildingView>();
@@ -248,7 +253,7 @@ public class BuildingManager : MonoBehaviour
         Debug.Log($"Placed {definition.structureName} at {gridPosition}");
 
         // Trigger event
-        GameEvents.TriggerBuildingPlaced(building);
+        // GameEvents.TriggerBuildingPlaced(building); // TODO: Update GameEvents
 
         // Clear placement mode
         CancelPlacement();
