@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 029cd7656c3ed244a99efef6b3cf1161, type: 3}
+  m_Name: Construction
+  m_EditorClassIdentifier: Assembly-CSharp::SkillDefinition
+  skillName: Construction
+  description: Ability to create or repair structures.
+  category: 3
+  maxLevel: 20
+  learningRate: 1
+  experienceCurve: 1.5
+  speedBonusPerLevel: 0.05
+  qualityBonusPerLevel: 0.04
+  canDecay: 0
+  decayRate: 0.1
+  skillColor: {r: 0.5283019, g: 0.37349102, b: 0.33641866, a: 1}
+  icon: {fileID: 0}

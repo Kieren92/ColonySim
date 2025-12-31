@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 209b19b045dd8534eb7680013b8acd54, type: 3}
+  m_Name: Workshop
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingDefinition
+  buildingName: Workshop
+  description: Members craft materials and tools here.
+  satisfiesNeed: 
+  needRestoreAmount: 0
+  useDuration: 5
+  capacity: 3
+  isWorkBuilding: 1
+  producedItem: {fileID: 11400000, guid: d8424bd2d9eaa0a4baf29b05500f09dd, type: 2}
+  productionRate: 5
+  workerCapacity: 2
+  productionSkills:
+  - skill: {fileID: 11400000, guid: 8539682cd0ad5254793fd211b2e7e5f1, type: 2}
+    weight: 1
+    affectsSpeed: 1
+    affectsQuality: 1
+    minimumLevel: 0
+  - skill: {fileID: 11400000, guid: de2b687b6bd6bf84d86990d954c6ad03, type: 2}
+    weight: 0.2
+    affectsSpeed: 1
+    affectsQuality: 0
+    minimumLevel: 0
+  skillCombineMode: 0
+  size: {x: 2, y: 2}
+  prefab: {fileID: 7548117580721675550, guid: b085b6dffe2bf1148a5cff94426e910b, type: 3}
+  woodCost: 10
+  laborCost: 5
+  buildingColor: {r: 0.85187596, g: 0.8773585, b: 0.5338644, a: 1}
+  icon: {fileID: 0}
